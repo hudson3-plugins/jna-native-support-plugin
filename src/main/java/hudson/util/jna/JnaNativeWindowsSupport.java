@@ -23,6 +23,7 @@
  */
 package hudson.util.jna;
 
+import org.jvnet.winp.WinpException;
 import hudson.Extension;
 import java.io.File;
 import java.util.List;
@@ -70,12 +71,10 @@ public class JnaNativeWindowsSupport extends NativeWindowsSupport {
         return LIBC.strerror(Native.getLastError());
     }
 
-
     @Override
     public boolean isDotNetInstalled(int major, int minor) throws NativeAccessException {
         return DotNet.isInstalled(major, minor);
     }
-
 
     @Override
     public List<NativeProcess> getWindowsProcesses() {
@@ -118,7 +117,7 @@ public class JnaNativeWindowsSupport extends NativeWindowsSupport {
     public void windowsMoveFile(File fromFile, File toFile) {
         Kernel32.INSTANCE.MoveFileExA(fromFile.getAbsolutePath(), toFile.getAbsolutePath(), MOVEFILE_DELAY_UNTIL_REBOOT | MOVEFILE_REPLACE_EXISTING);
     }
-     
+
     private static class NativeWindowsProcess implements NativeProcess {
 
         WinProcess nativeWindowsProcess;
@@ -153,9 +152,13 @@ public class JnaNativeWindowsSupport extends NativeWindowsSupport {
         }
 
         public Map<String, String> getEnvironmentVariables() {
-            return nativeWindowsProcess.getEnvironmentVariables();
+            try {
+                return nativeWindowsProcess.getEnvironmentVariables();
+            } catch (WinpException exc) {
+                throw new NativeAccessException(exc);
+            }
         }
-    } 
+    }
 
     @Extension
     public static class DescriptorImpl extends NativeWindowsSupportDescriptor {
