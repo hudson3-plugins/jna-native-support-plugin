@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package hudson.util.jna;
+package org.hudsonci.plugins.jna;
 
 import org.jvnet.winp.WinpException;
 import hudson.Extension;
@@ -31,13 +31,17 @@ import java.util.Map;
 import java.util.logging.Logger;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import static hudson.util.jna.GNUCLibrary.LIBC;
 import com.sun.jna.Native;
+import hudson.util.jna.NativeAccessException;
+import hudson.util.jna.NativeFunction;
+import hudson.util.jna.NativeProcess;
+import hudson.util.jna.NativeWindowsSupport;
+import hudson.util.jna.NativeWindowsSupportDescriptor;
 import java.util.ArrayList;
 import org.jvnet.winp.WinProcess;
 
-import static hudson.util.jna.Kernel32.MOVEFILE_DELAY_UNTIL_REBOOT;
-import static hudson.util.jna.Kernel32.MOVEFILE_REPLACE_EXISTING;
+import static org.hudsonci.plugins.jna.Kernel32.MOVEFILE_DELAY_UNTIL_REBOOT;
+import static org.hudsonci.plugins.jna.Kernel32.MOVEFILE_REPLACE_EXISTING;
 
 /**
  *
@@ -46,6 +50,8 @@ import static hudson.util.jna.Kernel32.MOVEFILE_REPLACE_EXISTING;
 public class JnaNativeWindowsSupport extends NativeWindowsSupport {
 
     private static final Logger LOGGER = Logger.getLogger(JnaNativeWindowsSupport.class.getName());
+    
+    private String lastError = "";
 
     @DataBoundConstructor
     public JnaNativeWindowsSupport() {
@@ -68,7 +74,7 @@ public class JnaNativeWindowsSupport extends NativeWindowsSupport {
 
     @Override
     public String getLastError() {
-        return LIBC.strerror(Native.getLastError());
+        return "Native Window Error Code: " + Native.getLastError();
     }
 
     @Override

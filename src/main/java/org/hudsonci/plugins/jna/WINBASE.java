@@ -13,7 +13,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 Lesser General Public License for more details.
  */
-package hudson.util.jna;
+package org.hudsonci.plugins.jna;
 
 import com.sun.jna.Structure;
 import com.sun.jna.Pointer;

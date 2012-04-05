@@ -1,4 +1,4 @@
-package hudson.util.jna;
+package org.hudsonci.plugins.jna;
 
 import org.jruby.ext.posix.POSIX.ERRORS;
 

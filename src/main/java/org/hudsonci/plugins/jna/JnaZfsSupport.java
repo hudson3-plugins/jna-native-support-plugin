@@ -21,10 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package hudson.util.jna;
+package org.hudsonci.plugins.jna;
 
 import com.sun.jna.Native;
 import hudson.Extension;
+import hudson.util.jna.NativeAccessException;
+import hudson.util.jna.NativeFunction;
+import hudson.util.jna.NativeZfsFileSystem;
+import hudson.util.jna.NativeZfsSupport;
+import hudson.util.jna.NativeZfsSupportDescriptor;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +40,7 @@ import org.jvnet.solaris.libzfs.ZFSFileSystem;
 import org.jvnet.solaris.mount.MountFlags;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import static hudson.util.jna.GNUCLibrary.LIBC;
+import static org.hudsonci.plugins.jna.GNUCLibrary.LIBC;
 
 /**
  *

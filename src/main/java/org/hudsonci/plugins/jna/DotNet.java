@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package hudson.util.jna;
+package org.hudsonci.plugins.jna;
 
 import org.jinterop.dcom.common.IJIAuthInfo;
 import org.jinterop.dcom.common.JIException;

@@ -24,4 +24,4 @@
 /**
  * Native code wrappers.
  */
-package hudson.util.jna;
+package org.hudsonci.plugins.jna;

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package hudson.util.jna;
+package org.hudsonci.plugins.jna;
 
 import java.util.HashMap;
 import java.io.ByteArrayOutputStream;
@@ -34,8 +34,13 @@ import java.util.Map;
 import java.util.logging.Logger;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import static hudson.util.jna.GNUCLibrary.LIBC;
+import static org.hudsonci.plugins.jna.GNUCLibrary.LIBC;
 import com.sun.jna.Native;
+import hudson.util.jna.NativeAccessException;
+import hudson.util.jna.NativeFunction;
+import hudson.util.jna.NativeMacSupport;
+import hudson.util.jna.NativeMacSupportDescriptor;
+import hudson.util.jna.NativeProcess;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -43,7 +48,7 @@ import static com.sun.jna.Pointer.NULL;
 
 /**
  *
- *  JNA based Native Support Extension for Hudson
+ * JNA based Native Support Extension for Hudson
  */
 public class JnaNativeMacSupport extends NativeMacSupport {
 
@@ -68,8 +73,6 @@ public class JnaNativeMacSupport extends NativeMacSupport {
     public String getLastError() {
         return LIBC.strerror(Native.getLastError());
     }
-
-     
     // local constants
     private static final int sizeOf_kinfo_proc = 492; // TODO:checked on 32bit Mac OS X. is this different on 64bit?
     private static final int sizeOfInt = Native.getNativeSize(int.class);
@@ -156,15 +159,22 @@ public class JnaNativeMacSupport extends NativeMacSupport {
             throw new UnsupportedOperationException("This native Opration is not yet supported on Mac");
         }
 
-        public String getCommandLine() {
-            throw new UnsupportedOperationException("Not supported yet.");
+        public synchronized String getCommandLine() {
+            if (arguments == null) {
+                parse();
+            }
+            StringBuilder commandLine = new StringBuilder();
+            for (String arg : arguments) {
+                commandLine.append(arg);
+                commandLine.append(" ");
+            }
+            return commandLine.toString();
         }
 
-        public Map<String, String> getEnvironmentVariables() {
-            if (envVars != null) {
-                return envVars;
+        public synchronized Map<String, String> getEnvironmentVariables() {
+            if (envVars == null) {
+                parse();
             }
-            parse();
             return envVars;
         }
 
@@ -174,19 +184,6 @@ public class JnaNativeMacSupport extends NativeMacSupport {
                 // and avoid retry.
                 arguments = new ArrayList<String>();
                 envVars = new HashMap<String, String>();
-
-                IntByReference _ = new IntByReference();
-
-                IntByReference argmaxRef = new IntByReference(0);
-                IntByReference size = new IntByReference(sizeOfInt);
-
-                // for some reason, I was never able to get sysctlbyname work.
-                // if(LIBC.sysctlbyname("kern.argmax", argmaxRef.getPointer(), size, NULL, _)!=0)
-                if (LIBC.sysctl(new int[]{CTL_KERN, KERN_ARGMAX}, 2, argmaxRef.getPointer(), size, NULL, _) != 0) {
-                    throw new IOException("Failed to get kernl.argmax: " + LIBC.strerror(Native.getLastError()));
-                }
-
-                int argmax = argmaxRef.getValue();
 
                 class StringArrayMemory extends Memory {
 
@@ -202,6 +199,10 @@ public class JnaNativeMacSupport extends NativeMacSupport {
                         return r;
                     }
 
+                    boolean hasMore() {
+                        return offset < getSize();
+                    }
+
                     byte peek() {
                         return getByte(offset);
                     }
@@ -209,7 +210,7 @@ public class JnaNativeMacSupport extends NativeMacSupport {
                     String readString() {
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
                         byte ch;
-                        while ((ch = getByte(offset++)) != '\0') {
+                        while (hasMore() && (ch = getByte(offset++)) != '\0') {
                             baos.write(ch);
                         }
                         return baos.toString();
@@ -222,50 +223,38 @@ public class JnaNativeMacSupport extends NativeMacSupport {
                         }
                     }
                 }
-                StringArrayMemory m = new StringArrayMemory(argmax);
-                size.setValue(argmax);
-                if (LIBC.sysctl(new int[]{CTL_KERN, KERN_PROCARGS2, pid}, 3, m, size, NULL, _) != 0) {
-                    throw new IOException("Failed to obtain ken.procargs2: " + LIBC.strerror(Native.getLastError()));
+                IntByReference newSize = new IntByReference();
+                IntByReference size = new IntByReference(sizeOfInt);
+
+                // First determine the size of the memory blob we need to allocate
+                if (LIBC.sysctl(new int[]{CTL_KERN, KERN_PROCARGS2, pid}, 3, NULL, size, NULL, newSize) != 0) {
+                    throw new IOException("Failed to obtain size for kern.procargs2: " + LIBC.strerror(Native.getLastError()));
                 }
+
+                // ... and increase it by 1.  For some reason we have to
+                // do this (using LIBC), otherwise the following real
+                // sysctl call won't return the real data but only some garbage...
+                size.setValue(size.getValue() + 1);
+                StringArrayMemory m = new StringArrayMemory(size.getValue());
+                if (LIBC.sysctl(new int[]{CTL_KERN, KERN_PROCARGS2, pid}, 3, m, size, NULL, newSize) != 0) {
+                    throw new IOException("Failed to obtain kern.procargs2: " + LIBC.strerror(Native.getLastError()));
+                }
+
 
 
                 /*
                  * Make a sysctl() call to get the raw argument space of the
-                 * process.  The layout is documented in start.s, which is part
-                 * of the Csu project.  In summary, it looks like:
+                 * process. The layout is documented in start.s, which is part
+                 * of the Csu project. In summary, it looks like:
                  *
-                 * /---------------\ 0x00000000
-                 * :               :
-                 * :               :
-                 * |---------------|
-                 * | argc          |
-                 * |---------------|
-                 * | arg[0]        |
-                 * |---------------|
-                 * :               :
-                 * :               :
-                 * |---------------|
-                 * | arg[argc - 1] |
-                 * |---------------|
-                 * | 0             |
-                 * |---------------|
-                 * | env[0]        |
-                 * |---------------|
-                 * :               :
-                 * :               :
-                 * |---------------|
-                 * | env[n]        |
-                 * |---------------|
-                 * | 0             |
+                 * /---------------\ 0x00000000 : : : : |---------------| |
+                 * argc | |---------------| | arg[0] | |---------------| : : : :
+                 * |---------------| | arg[argc - 1] | |---------------| | 0 |
+                 * |---------------| | env[0] | |---------------| : : : :
+                 * |---------------| | env[n] | |---------------| | 0 |
                  * |---------------| <-- Beginning of data returned by sysctl()
-                 * | exec_path     |     is here.
-                 * |:::::::::::::::|
-                 * |               |
-                 * | String area.  |
-                 * |               |
-                 * |---------------| <-- Top of stack.
-                 * :               :
-                 * :               :
+                 * | exec_path | is here. |:::::::::::::::| | | | String area. |
+                 * | | |---------------| <-- Top of stack. : : : :
                  * \---------------/ 0xffffffff
                  */
 
@@ -277,7 +266,7 @@ public class JnaNativeMacSupport extends NativeMacSupport {
                 }
 
                 // this is how you can read environment variables
-                while (m.peek() != 0) {
+                while (m.hasMore() && m.peek() != 0) {
                     String line = m.readString();
                     int sep = line.indexOf('=');
                     if (sep > 0) {

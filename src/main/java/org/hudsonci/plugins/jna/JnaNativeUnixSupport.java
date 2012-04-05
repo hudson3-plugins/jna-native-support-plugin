@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package hudson.util.jna;
+package org.hudsonci.plugins.jna;
 
 import org.jruby.ext.posix.Group;
 import org.jruby.ext.posix.Passwd;
@@ -41,9 +41,14 @@ import java.util.Map;
 import java.util.logging.Logger;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import static hudson.util.jna.GNUCLibrary.LIBC;
+import static org.hudsonci.plugins.jna.GNUCLibrary.LIBC;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
+import hudson.util.jna.NativeAccessException;
+import hudson.util.jna.NativeFunction;
+import hudson.util.jna.NativeSystemMemory;
+import hudson.util.jna.NativeUnixSupport;
+import hudson.util.jna.NativeUnixSupportDescriptor;
 import java.io.IOException;
 import org.jruby.ext.posix.FileStat;
 import org.jruby.ext.posix.POSIX;
@@ -51,9 +56,9 @@ import org.jvnet.hudson.MemoryMonitor;
 import org.jvnet.hudson.MemoryUsage;
 
 
-import static hudson.util.jna.GNUCLibrary.FD_CLOEXEC;
-import static hudson.util.jna.GNUCLibrary.F_GETFD;
-import static hudson.util.jna.GNUCLibrary.F_SETFD;
+import static org.hudsonci.plugins.jna.GNUCLibrary.FD_CLOEXEC;
+import static org.hudsonci.plugins.jna.GNUCLibrary.F_GETFD;
+import static org.hudsonci.plugins.jna.GNUCLibrary.F_SETFD;
 
 /**
  *
@@ -139,11 +144,11 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
     @Override
     public boolean createSymlink(String targetPath, File symlinkFile) {
         try {
-            return LIBC.symlink(targetPath, symlinkFile.getAbsolutePath()) == 0;
+            return LIBC.symlink(symlinkFile.getAbsolutePath(), targetPath) == 0;
         } catch (LinkageError e) {
             // if JNA is unavailable, fall back.
             // we still prefer to try JNA first as PosixAPI supports even smaller platforms.
-            return PosixAPI.get().symlink(targetPath, symlinkFile.getAbsolutePath()) == 0;
+            return PosixAPI.get().symlink(symlinkFile.getAbsolutePath(), targetPath) == 0;
         }
     }
 
@@ -273,8 +278,7 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
             serviceName = "sshd"; // use sshd as the default
         }
         try {
-            UnixUser unixUser;
-            unixUser = new PAM(serviceName).authenticate(userName, password);
+            UnixUser unixUser = new PAM(serviceName).authenticate(userName, password);
             return unixUser.getGroups();
         } catch (PAMException ex) {
             throw new NativeAccessException(ex);
@@ -291,15 +295,15 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
             POSIX api = PosixAPI.get();
             FileStat st = api.stat("/etc/shadow");
             if (st == null) {
-                return "Error:" + Messages2.PAMSecurityRealm_ReadPermission();
+                return "Error:" + Messages.PAMSecurityRealm_ReadPermission();
             }
 
             Passwd pwd = api.getpwuid(api.geteuid());
             String user;
             if (pwd != null) {
-                user = "Error:" + Messages2.PAMSecurityRealm_User(pwd.getLoginName());
+                user = "Error:" + Messages.PAMSecurityRealm_User(pwd.getLoginName());
             } else {
-                user = "Error:" + Messages2.PAMSecurityRealm_CurrentUser();
+                user = "Error:" + Messages.PAMSecurityRealm_CurrentUser();
             }
 
             String group;
@@ -312,20 +316,20 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
 
             if ((st.mode() & FileStat.S_IRGRP) != 0) {
                 // the file is readable to group. Hudson should be in the right group, then
-                return "Error:" + Messages2.PAMSecurityRealm_BelongToGroup(user, group);
+                return "Error:" + Messages.PAMSecurityRealm_BelongToGroup(user, group);
             } else {
                 Passwd opwd = api.getpwuid(st.uid());
                 String owner;
                 if (opwd != null) {
                     owner = opwd.getLoginName();
                 } else {
-                    owner = "Error:" + Messages2.PAMSecurityRealm_Uid(st.uid());
+                    owner = "Error:" + Messages.PAMSecurityRealm_Uid(st.uid());
                 }
 
-                return "Error:" + Messages2.PAMSecurityRealm_RunAsUserOrBelongToGroupAndChmod(owner, user, group);
+                return "Error:" + Messages.PAMSecurityRealm_RunAsUserOrBelongToGroupAndChmod(owner, user, group);
             }
         }
-        return Messages2.PAMSecurityRealm_Success();
+        return Messages.PAMSecurityRealm_Success();
     }
 
     private static class SystemMemoryImpl implements NativeSystemMemory {
