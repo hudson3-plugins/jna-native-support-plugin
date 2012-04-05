@@ -4,6 +4,7 @@
  */
 package org.hudsonci.plugins.jna;
 
+import hudson.Functions;
 import hudson.util.jna.NativeSystemMemory;
 import java.util.Iterator;
 import java.util.Map;
@@ -14,7 +15,8 @@ import org.junit.Test;
 
 /**
  * Unit Test for JnaNativeUnixSupport Utility
- *
+ * These tests can not run on a windows machine
+ * 
  * @author Winston Prakash
  */
 public class UnixSupportTest {
@@ -24,6 +26,7 @@ public class UnixSupportTest {
      */
     @Test
     public void testGetLastError() {
+        if (Functions.isWindows()) return;
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         String expResult = "Unknown error: 0";
         // Since no operation done, should return error code 0
@@ -41,6 +44,7 @@ public class UnixSupportTest {
      */
     @Ignore
     public void testGetSystemMemory() {
+        if (Functions.isWindows()) return;
         System.out.println("getSystemMemory");
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         NativeSystemMemory result = instance.getSystemMemory();
@@ -55,6 +59,7 @@ public class UnixSupportTest {
      */
     @Test
     public void testCanRestartJavaProcess() {
+        if (Functions.isWindows()) return;
         System.out.println("Can Restart Java Process Test");
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         boolean result = instance.canRestartJavaProcess();
@@ -70,6 +75,7 @@ public class UnixSupportTest {
      */
     @Ignore
     public void testRestartJavaProcess() {
+        if (Functions.isWindows()) return;
         System.out.println("Restart Java Process Test");
         Map<String, String> properties = null;
         boolean daemonExec = false;
@@ -82,6 +88,7 @@ public class UnixSupportTest {
      */
     @Test
     public void testCheckPamAuthentication() {
+        if (Functions.isWindows()) return;
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         String result = instance.checkPamAuthentication();
         System.out.println("Check PAM Authentication Availability: " + result);
@@ -94,6 +101,7 @@ public class UnixSupportTest {
      */
     @Ignore
     public void testPamAuthenticate() {
+        if (Functions.isWindows()) return;
         System.out.println("PAM Authenticate Test");
         String serviceName = "sshd"; // Either sshd or ssh (May be on linux it is SSH)
         String userName = "winstonp"; // Your user name

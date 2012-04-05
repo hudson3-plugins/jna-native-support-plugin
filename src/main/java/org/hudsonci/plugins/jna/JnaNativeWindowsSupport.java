@@ -38,20 +38,18 @@ import hudson.util.jna.NativeProcess;
 import hudson.util.jna.NativeWindowsSupport;
 import hudson.util.jna.NativeWindowsSupportDescriptor;
 import java.util.ArrayList;
+import java.util.HashMap;
 import org.jvnet.winp.WinProcess;
 
-import static org.hudsonci.plugins.jna.Kernel32.MOVEFILE_DELAY_UNTIL_REBOOT;
-import static org.hudsonci.plugins.jna.Kernel32.MOVEFILE_REPLACE_EXISTING;
+import static org.hudsonci.plugins.jna.Kernel32.*;
 
 /**
  *
- *  JNA based Native Support Extension for Hudson
+ * JNA based Native Support Extension for Hudson
  */
 public class JnaNativeWindowsSupport extends NativeWindowsSupport {
 
     private static final Logger LOGGER = Logger.getLogger(JnaNativeWindowsSupport.class.getName());
-    
-    private String lastError = "";
 
     @DataBoundConstructor
     public JnaNativeWindowsSupport() {
@@ -60,6 +58,8 @@ public class JnaNativeWindowsSupport extends NativeWindowsSupport {
     @Override
     public boolean hasSupportFor(NativeFunction nativeFunc) {
         switch (nativeFunc) {
+            case DOTNET:
+                return true;
             case WINDOWS_PROCESS:
                 return true;
             case WINDOWS_EXEC:
@@ -121,7 +121,7 @@ public class JnaNativeWindowsSupport extends NativeWindowsSupport {
 
     @Override
     public void windowsMoveFile(File fromFile, File toFile) {
-        Kernel32.INSTANCE.MoveFileExA(fromFile.getAbsolutePath(), toFile.getAbsolutePath(), MOVEFILE_DELAY_UNTIL_REBOOT | MOVEFILE_REPLACE_EXISTING);
+        Kernel32.INSTANCE.MoveFileExA(fromFile.getAbsolutePath(), toFile.getAbsolutePath(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
     }
 
     private static class NativeWindowsProcess implements NativeProcess {
@@ -154,14 +154,22 @@ public class JnaNativeWindowsSupport extends NativeWindowsSupport {
         }
 
         public String getCommandLine() {
-            return nativeWindowsProcess.getCommandLine();
+            try {
+                return nativeWindowsProcess.getCommandLine();
+            } catch (WinpException exc) {
+                // User may not have access to certain process
+                System.out.println(exc.getLocalizedMessage());
+                return "";
+            }
         }
 
         public Map<String, String> getEnvironmentVariables() {
             try {
                 return nativeWindowsProcess.getEnvironmentVariables();
             } catch (WinpException exc) {
-                throw new NativeAccessException(exc);
+                // User may not have access to certain process
+                System.out.println(exc.getLocalizedMessage());
+                return new HashMap();
             }
         }
     }

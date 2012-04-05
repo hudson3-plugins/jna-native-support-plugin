@@ -9,9 +9,11 @@ import java.io.IOException;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import hudson.Functions;
 
 /**
  * Unit Test for File modes of JNA based Native Unix Support
+ * These tests can not run on a windows machine
  *
  * @author Winston Prakash
  */
@@ -22,6 +24,7 @@ public class UnixFileModeTest {
      */
     @Test
     public void testMode() throws IOException {
+        if (Functions.isWindows()) return;
         File file = File.createTempFile("test", "test");
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         int expResult = 33188; // Octal 100644
@@ -35,6 +38,7 @@ public class UnixFileModeTest {
      */
     @Test
     public void testChmod() throws IOException {
+        if (Functions.isWindows()) return;
         File file = File.createTempFile("test", "test");
         int mask = Integer.parseInt("100655", 8);
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
@@ -50,6 +54,7 @@ public class UnixFileModeTest {
      */
     @Test
     public void testChown() throws IOException {
+        if (Functions.isWindows()) return;
         File file = File.createTempFile("test", "test");
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         int uid = instance.getEuid();
@@ -66,6 +71,7 @@ public class UnixFileModeTest {
      */
     @Test
     public void testMakeFileWritable() throws IOException {
+        if (Functions.isWindows()) return;
         File file = File.createTempFile("test", "test");
         file.deleteOnExit();
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
@@ -86,6 +92,7 @@ public class UnixFileModeTest {
      */
     @Test
     public void testCreateSymlink() throws IOException {
+        if (Functions.isWindows()) return;
         File symlinkToFile = File.createTempFile("test", "test");
         symlinkToFile.deleteOnExit();
         File tempDir = symlinkToFile.getParentFile();
@@ -104,6 +111,7 @@ public class UnixFileModeTest {
      */
     @Test
     public void testResolveSymlink() throws IOException {
+        if (Functions.isWindows()) return;
         File symlinkToFile = File.createTempFile("test", "test");
         symlinkToFile.deleteOnExit();
         File tempDir = symlinkToFile.getParentFile();

@@ -4,6 +4,7 @@
  */
 package org.hudsonci.plugins.jna;
 
+import hudson.Functions;
 import hudson.util.jna.NativeSystemMemory;
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import org.junit.Test;
 
 /**
  * Unit Test for Unix User support in JNA based Native Unix Support
+ * These tests can not run on a windows machine
  *
  * @author Winston Prakash
  */
@@ -29,6 +31,7 @@ public class UnixUserModeTest {
      */
     @Test
     public void testGetEuid() {
+        if (Functions.isWindows()) return;
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         int result = instance.getEuid();
         System.out.println("Effective User ID of current user: " + result);
@@ -41,6 +44,7 @@ public class UnixUserModeTest {
      */
     @Test
     public void testGetEgid() {
+        if (Functions.isWindows()) return;
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         int result = instance.getEgid();
         System.out.println("Effective Group ID of current user: " + result);
@@ -52,6 +56,7 @@ public class UnixUserModeTest {
      */
     @Test
     public void testGetProcessUser() {
+        if (Functions.isWindows()) return;
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         String result = instance.getProcessUser();
         System.out.println("Process User Name: " + result);
@@ -65,6 +70,7 @@ public class UnixUserModeTest {
      */
     @Ignore
     public void testCheckUnixUser() {
+        if (Functions.isWindows()) return;
         String userName = "winstonp"; // Your user name
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         boolean result = instance.checkUnixUser(userName);
@@ -78,6 +84,7 @@ public class UnixUserModeTest {
      */
     @Ignore
     public void testCheckUnixGroup() {
+        if (Functions.isWindows()) return;
         String groupName = "staff"; // Your group name
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         boolean result = instance.checkUnixGroup(groupName);
@@ -93,6 +100,7 @@ public class UnixUserModeTest {
      */
     @Ignore
     public void testGetSystemMemory() {
+        if (Functions.isWindows()) return;
         System.out.println("getSystemMemory");
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         NativeSystemMemory result = instance.getSystemMemory();
@@ -107,6 +115,7 @@ public class UnixUserModeTest {
      */
     @Test
     public void testCanRestartJavaProcess() {
+        if (Functions.isWindows()) return;
         System.out.println("Can Restart Java Process Test");
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         boolean result = instance.canRestartJavaProcess();
@@ -122,6 +131,7 @@ public class UnixUserModeTest {
      */
     @Ignore
     public void testRestartJavaProcess() {
+        if (Functions.isWindows()) return;
         System.out.println("Restart Java Process Test");
         Map<String, String> properties = null;
         boolean daemonExec = false;
@@ -134,6 +144,7 @@ public class UnixUserModeTest {
      */
     @Test
     public void testCheckPamAuthentication() {
+        if (Functions.isWindows()) return;
         JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
         String result = instance.checkPamAuthentication();
         System.out.println("Check PAM Authentication Availability: " + result);
@@ -146,6 +157,7 @@ public class UnixUserModeTest {
      */
     @Ignore
     public void testPamAuthenticate() {
+        if (Functions.isWindows()) return;
         System.out.println("PAM Authenticate Test");
         String serviceName = "sshd"; // Either sshd or ssh (May be on linux it is SSH)
         String userName = "winstonp"; // Your user name
