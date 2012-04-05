@@ -87,8 +87,6 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
                 return true;
             case RESOLVE_LINK:
                 return true;
-            case DOTNET:
-                return true;
             case SYSTEM_MEMORY:
                 return true;
             case EUID:
@@ -100,6 +98,8 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
             case UNIX_USER:
                 return true;
             case UNIX_GROUP:
+                return true;
+            case PAM:
                 return true;
             case ERROR:
                 return true;
