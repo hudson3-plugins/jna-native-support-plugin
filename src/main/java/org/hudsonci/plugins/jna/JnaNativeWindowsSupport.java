@@ -28,7 +28,6 @@ import hudson.Extension;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.sun.jna.Native;
@@ -44,7 +43,7 @@ import org.jvnet.winp.WinProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hudsonci.plugins.jna.windows.Kernel32.*;
+import static org.hudsonci.plugins.jna.Kernel32.*;
 
 /**
  *
