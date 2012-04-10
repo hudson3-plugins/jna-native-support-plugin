@@ -33,7 +33,6 @@ import hudson.util.jna.NativeZfsSupportDescriptor;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 import org.jvnet.solaris.libzfs.ACLBuilder;
 import org.jvnet.solaris.libzfs.LibZFS;
 import org.jvnet.solaris.libzfs.ZFSFileSystem;
@@ -42,20 +41,24 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import static org.hudsonci.plugins.jna.GNUCLibrary.LIBC;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *
  *  JNA based ZFS Support Extension for Hudson
  */
 public class JnaZfsSupport extends NativeZfsSupport {
 
-    private static final Logger LOGGER = Logger.getLogger(JnaZfsSupport.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(NativeUtils.class);
     private LibZFS zfs;
 
     @DataBoundConstructor
     public JnaZfsSupport() {
         try {
             zfs = new LibZFS();
-        } catch (UnsatisfiedLinkError exc) {
+        } catch (Throwable thr) {
+            
             // Never mind. Native ZFS library could not be loaded
             // We don't support ZFS after all
         }

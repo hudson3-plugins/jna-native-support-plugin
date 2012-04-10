@@ -41,7 +41,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import org.jvnet.winp.WinProcess;
 
-import static org.hudsonci.plugins.jna.Kernel32.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.hudsonci.plugins.jna.windows.Kernel32.*;
 
 /**
  *
@@ -49,7 +52,7 @@ import static org.hudsonci.plugins.jna.Kernel32.*;
  */
 public class JnaNativeWindowsSupport extends NativeWindowsSupport {
 
-    private static final Logger LOGGER = Logger.getLogger(JnaNativeWindowsSupport.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(JnaNativeWindowsSupport.class);
 
     @DataBoundConstructor
     public JnaNativeWindowsSupport() {
@@ -158,7 +161,7 @@ public class JnaNativeWindowsSupport extends NativeWindowsSupport {
                 return nativeWindowsProcess.getCommandLine();
             } catch (WinpException exc) {
                 // User may not have access to certain process
-                System.out.println(exc.getLocalizedMessage());
+                logger.debug("Could not get command line for windows process " + nativeWindowsProcess.getPid());
                 return "";
             }
         }
@@ -168,7 +171,7 @@ public class JnaNativeWindowsSupport extends NativeWindowsSupport {
                 return nativeWindowsProcess.getEnvironmentVariables();
             } catch (WinpException exc) {
                 // User may not have access to certain process
-                System.out.println(exc.getLocalizedMessage());
+                logger.debug("Could not get environment variable for windows process " + nativeWindowsProcess.getPid());
                 return new HashMap();
             }
         }
