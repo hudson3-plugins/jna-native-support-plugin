@@ -5,7 +5,7 @@
     <groupId>org.hudsonci.plugins</groupId>
     <artifactId>jna-native-support-plugin</artifactId>
     <packaging>hpi</packaging>
-    <version>3.0.1-SNAPSHOT</version>
+    <version>3.0.1</version>
      
     <parent>
         <groupId>org.eclipse.hudson.plugins</groupId>
