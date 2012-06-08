@@ -5,10 +5,10 @@
 package org.hudsonci.plugins.jna;
 
 import hudson.Functions;
-import hudson.util.jna.NativeSystemMemory;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import org.eclipse.hudson.jna.NativeSystemMemory;
 import org.junit.Ignore;
 import org.junit.Assert;
 import org.junit.Test;

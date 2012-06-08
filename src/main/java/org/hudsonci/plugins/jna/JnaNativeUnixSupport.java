@@ -25,7 +25,6 @@ package org.hudsonci.plugins.jna;
 
 import org.jruby.ext.posix.Group;
 import org.jruby.ext.posix.Passwd;
-import org.jvnet.libpam.PAM;
 import java.util.Set;
 import org.jvnet.libpam.PAMException;
 import org.jvnet.libpam.impl.CLibrary;
@@ -44,12 +43,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import static org.hudsonci.plugins.jna.GNUCLibrary.LIBC;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
-import hudson.util.jna.NativeAccessException;
-import hudson.util.jna.NativeFunction;
-import hudson.util.jna.NativeSystemMemory;
-import hudson.util.jna.NativeUnixSupport;
-import hudson.util.jna.NativeUnixSupportDescriptor;
 import java.io.IOException;
+import org.eclipse.hudson.jna.*;
 import org.jruby.ext.posix.FileStat;
 import org.jruby.ext.posix.POSIX;
 import org.jvnet.hudson.MemoryMonitor;
@@ -59,6 +54,7 @@ import org.jvnet.hudson.MemoryUsage;
 import static org.hudsonci.plugins.jna.GNUCLibrary.FD_CLOEXEC;
 import static org.hudsonci.plugins.jna.GNUCLibrary.F_GETFD;
 import static org.hudsonci.plugins.jna.GNUCLibrary.F_SETFD;
+import org.jvnet.libpam.PAM;
 
 /**
  *

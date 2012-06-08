@@ -36,15 +36,11 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import static org.hudsonci.plugins.jna.GNUCLibrary.LIBC;
 import com.sun.jna.Native;
-import hudson.util.jna.NativeAccessException;
-import hudson.util.jna.NativeFunction;
-import hudson.util.jna.NativeMacSupport;
-import hudson.util.jna.NativeMacSupportDescriptor;
-import hudson.util.jna.NativeProcess;
 import java.io.IOException;
 import java.util.ArrayList;
 
 import static com.sun.jna.Pointer.NULL;
+import org.eclipse.hudson.jna.*;
 
 /**
  *

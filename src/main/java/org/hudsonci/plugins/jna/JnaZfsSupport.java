@@ -25,14 +25,10 @@ package org.hudsonci.plugins.jna;
 
 import com.sun.jna.Native;
 import hudson.Extension;
-import hudson.util.jna.NativeAccessException;
-import hudson.util.jna.NativeFunction;
-import hudson.util.jna.NativeZfsFileSystem;
-import hudson.util.jna.NativeZfsSupport;
-import hudson.util.jna.NativeZfsSupportDescriptor;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import org.eclipse.hudson.jna.*;
 import org.jvnet.solaris.libzfs.ACLBuilder;
 import org.jvnet.solaris.libzfs.LibZFS;
 import org.jvnet.solaris.libzfs.ZFSFileSystem;

@@ -31,13 +31,9 @@ import java.util.Map;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import com.sun.jna.Native;
-import hudson.util.jna.NativeAccessException;
-import hudson.util.jna.NativeFunction;
-import hudson.util.jna.NativeProcess;
-import hudson.util.jna.NativeWindowsSupport;
-import hudson.util.jna.NativeWindowsSupportDescriptor;
 import java.util.ArrayList;
 import java.util.HashMap;
+import org.eclipse.hudson.jna.*;
 import org.jvnet.winp.WinProcess;
 
 import org.slf4j.Logger;

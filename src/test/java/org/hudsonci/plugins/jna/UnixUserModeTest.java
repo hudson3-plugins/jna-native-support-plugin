@@ -5,13 +5,10 @@
 package org.hudsonci.plugins.jna;
 
 import hudson.Functions;
-import hudson.util.jna.NativeSystemMemory;
-import java.io.File;
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang.RandomStringUtils;
+import org.eclipse.hudson.jna.NativeSystemMemory;
 import org.junit.Ignore;
 import org.junit.Assert;
 import org.junit.Test;

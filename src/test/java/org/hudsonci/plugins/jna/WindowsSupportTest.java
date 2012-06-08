@@ -5,13 +5,12 @@
 package org.hudsonci.plugins.jna;
 
 import hudson.Functions;
-import hudson.util.jna.NativeFunction;
-import hudson.util.jna.NativeProcess;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.RandomStringUtils;
+import org.eclipse.hudson.jna.NativeProcess;
 import org.junit.*;
 import static org.junit.Assert.*;
 

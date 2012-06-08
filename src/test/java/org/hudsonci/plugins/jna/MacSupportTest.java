@@ -6,9 +6,9 @@ package org.hudsonci.plugins.jna;
 
 import hudson.Functions;
 import hudson.Util;
-import hudson.util.jna.NativeProcess;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.hudson.jna.NativeProcess;
 import org.junit.*;
 
 /**
