@@ -15,6 +15,41 @@
 
     <name>JNA Native Support Plugin</name>
     
+    <url>http://wiki.hudson-ci.org/display/HUDSON/JNA+Native+Support+plugin</url>
+    <description>Plugin provides support for Native Access using JNA library.</description>
+    <licenses>
+        <license>
+            <name>The MIT license</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    
+    <scm>
+        <connection>scm:git:git://github.com/hudson3-plugins/ssh-slaves-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:hudson3-plugins/ssh-slaves-plugin.git</developerConnection>
+        <url>https://github.com/hudson3-plugins/ssh-slaves-plugin</url>
+    </scm>
+    
+    <properties>
+        <hudsonTags>misc</hudsonTags>
+    </properties>
+
+    <developers>
+        <developer>
+            <id>wjprakash</id>
+            <name>Winston Prakash</name>
+            <roles>
+                <role>
+                    Maintainer
+                </role>
+            </roles>
+            <email>
+                winston.prakash@gmail.com
+            </email>
+        </developer>
+    </developers>
+    
     <dependencies> 
     
         <dependency>
