@@ -26,9 +26,9 @@
     </licenses>
     
     <scm>
-        <connection>scm:git:git://github.com/hudson3-plugins/ssh-slaves-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:hudson3-plugins/ssh-slaves-plugin.git</developerConnection>
-        <url>https://github.com/hudson3-plugins/ssh-slaves-plugin</url>
+        <connection>scm:git:git://github.com/hudson3-plugins/jna-native-support-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:hudson3-plugins/jna-native-support-plugin.git</developerConnection>
+        <url>https://github.com/hudson3-plugins/jna-native-support-plugin</url>
     </scm>
     
     <properties>
