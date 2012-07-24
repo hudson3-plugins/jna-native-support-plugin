@@ -23,46 +23,38 @@
  */
 package org.hudsonci.plugins.jna;
 
-import org.jruby.ext.posix.Group;
-import org.jruby.ext.posix.Passwd;
-import java.util.Set;
-import org.jvnet.libpam.PAMException;
-import org.jvnet.libpam.impl.CLibrary;
-import org.jvnet.libpam.UnixUser;
-import com.sun.akuma.JavaVMArguments;
 import com.sun.akuma.Daemon;
-import com.sun.jna.StringArray;
-import java.util.logging.Level;
+import com.sun.akuma.JavaVMArguments;
 import com.sun.jna.Memory;
+import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
+import com.sun.jna.StringArray;
 import hudson.Extension;
 import java.io.File;
 import java.util.Map;
-import java.util.logging.Logger;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import static org.hudsonci.plugins.jna.GNUCLibrary.LIBC;
-import com.sun.jna.Native;
-import com.sun.jna.NativeLong;
-import java.io.IOException;
+import java.util.Set;
 import org.eclipse.hudson.jna.*;
+import static org.hudsonci.plugins.jna.GNUCLibrary.*;
 import org.jruby.ext.posix.FileStat;
+import org.jruby.ext.posix.Group;
 import org.jruby.ext.posix.POSIX;
+import org.jruby.ext.posix.Passwd;
 import org.jvnet.hudson.MemoryMonitor;
 import org.jvnet.hudson.MemoryUsage;
-
-
-import static org.hudsonci.plugins.jna.GNUCLibrary.FD_CLOEXEC;
-import static org.hudsonci.plugins.jna.GNUCLibrary.F_GETFD;
-import static org.hudsonci.plugins.jna.GNUCLibrary.F_SETFD;
 import org.jvnet.libpam.PAM;
+import org.jvnet.libpam.UnixUser;
+import org.jvnet.libpam.impl.CLibrary;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
- *  JNA based Native Support Extension for Hudson
+ * JNA based Native Support Extension for Hudson
  */
 public class JnaNativeUnixSupport extends NativeUnixSupport {
 
-    private static final Logger LOGGER = Logger.getLogger(JnaNativeUnixSupport.class.getName());
+    private transient Logger logger = LoggerFactory.getLogger(JnaNativeUnixSupport.class);
 
     @DataBoundConstructor
     public JnaNativeUnixSupport() {
@@ -115,36 +107,79 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
         } catch (LinkageError e) {
             // if JNA is unavailable, fall back.
             // we still prefer to try JNA first as PosixAPI supports even smaller platforms.
-            return PosixAPI.get().chmod(file.getAbsolutePath(), mask) == 0;
+
+            try {
+                return PosixAPI.get().chmod(file.getAbsolutePath(), mask) == 0;
+            } catch (Exception ex) {
+                throw new NativeAccessException("Failed to do chmod. " + ex.getLocalizedMessage());
+            } catch (Error err) {
+                throw new NativeAccessException("Failed to do chmod. " + err.getLocalizedMessage());
+            }
         }
     }
 
     @Override
     public boolean chown(File file, int uid, int gid) {
-        return LIBC.chown(file.getPath(), uid, gid) == 0;
+        try {
+            return LIBC.chown(file.getPath(), uid, gid) == 0;
+        } catch (Exception ex) {
+            throw new NativeAccessException("Failed to do chown. " + ex.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to do chown. " + err.getLocalizedMessage());
+        }
     }
 
     @Override
     public int mode(File file) {
-        return PosixAPI.get().stat(file.getPath()).mode();
+        try {
+            return PosixAPI.get().stat(file.getPath()).mode();
+        } catch (Exception ex) {
+            throw new NativeAccessException("Failed to get File mode. " + ex.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to get File mode. " + err.getLocalizedMessage());
+        }
     }
 
     @Override
     public boolean makeFileWritable(File file) {
-        POSIX posix = PosixAPI.get();
-        String path = file.getAbsolutePath();
-        FileStat stat = posix.stat(path);
-        return posix.chmod(path, stat.mode() | 0200) == 0; // u+w
+        try {
+            POSIX posix = PosixAPI.get();
+            String path = file.getAbsolutePath();
+            FileStat stat = posix.stat(path);
+            return posix.chmod(path, stat.mode() | 0200) == 0; // u+w
+        } catch (Exception ex) {
+            throw new NativeAccessException("Failed to make file writable. " + ex.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to make file writable. " + err.getLocalizedMessage());
+        }
     }
 
     @Override
-    public boolean createSymlink(String targetPath, File symlinkFile) {
-        try {
-            return LIBC.symlink(symlinkFile.getAbsolutePath(), targetPath) == 0;
-        } catch (LinkageError e) {
-            // if JNA is unavailable, fall back.
-            // we still prefer to try JNA first as PosixAPI supports even smaller platforms.
+    public boolean createSymlink(String targetPath, File symlinkFile) throws NativeAccessException {
+        return createSymlink(targetPath, symlinkFile, false);
+    }
+
+    public boolean createSymlink(String targetPath, File symlinkFile, boolean usePosix) throws NativeAccessException {
+        if (usePosix) {
             return PosixAPI.get().symlink(symlinkFile.getAbsolutePath(), targetPath) == 0;
+
+        } else {
+            try {
+                return LIBC.symlink(symlinkFile.getAbsolutePath(), targetPath) == 0;
+            } catch (LinkageError exc) {
+                logger.info("Could not create symlink with JNA. From - " + symlinkFile
+                        + " to " + targetPath + ". " + exc.getLocalizedMessage()
+                        + " Trying Posix API..");
+                // if JNA is unavailable, fall back.
+                // we still prefer to try JNA first as PosixAPI supports even smaller platforms.
+                try {
+                    return PosixAPI.get().symlink(symlinkFile.getAbsolutePath(), targetPath) == 0;
+                } catch (Exception ex) {
+                    throw new NativeAccessException("Failed to Create Symlink. " + ex.getLocalizedMessage());
+                } catch (Error err) {
+                    throw new NativeAccessException("Failed to Create Symlink. " + err.getLocalizedMessage());
+                }
+            }
         }
     }
 
@@ -157,7 +192,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
                 int r = LIBC.readlink(filename, m, new NativeLong(sz));
                 if (r < 0) {
                     int err = Native.getLastError();
-                    if (err == 22/*EINVAL --- but is this really portable?*/) {
+                    if (err == 22/*
+                             * EINVAL --- but is this really portable?
+                             */) {
                         return null; // this means it's not a symlink
                     }
                     throw new NativeAccessException("Failed to readlink " + linkFile + " error=" + err + " " + LIBC.strerror(err));
@@ -176,8 +213,10 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
                 // if JNA is unavailable, fall back.
                 // we still prefer to try JNA first as PosixAPI supports even smaller platforms.
                 return PosixAPI.get().readlink(filename);
-            } catch (IOException ex) {
-                throw new NativeAccessException(ex.getLocalizedMessage());
+            } catch (Exception ex) {
+                throw new NativeAccessException("Failed to Resolve Symlink. " + ex.getLocalizedMessage());
+            } catch (Error ex) {
+                throw new NativeAccessException("Failed to Resolve Symlink. " + ex.getLocalizedMessage());
             }
         }
 
@@ -187,24 +226,44 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
     public NativeSystemMemory getSystemMemory() throws NativeAccessException {
         try {
             return new SystemMemoryImpl(MemoryMonitor.get().monitor());
-        } catch (IOException exc) {
-            throw new NativeAccessException(exc);
+        } catch (Exception exc) {
+            throw new NativeAccessException("Failed to get System Memory. " + exc.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to get System Memory. " + err.getLocalizedMessage());
         }
     }
 
     @Override
     public int getEuid() throws NativeAccessException {
-        return LIBC.geteuid();
+        try {
+            return LIBC.geteuid();
+        } catch (Exception exc) {
+            throw new NativeAccessException("Failed to get Euid. " + exc.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to get Euid. " + err.getLocalizedMessage());
+        }
     }
 
     @Override
     public int getEgid() throws NativeAccessException {
-        return LIBC.getegid();
+        try {
+            return LIBC.getegid();
+        } catch (Exception exc) {
+            throw new NativeAccessException("Failed to get Egid. " + exc.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to get Egid. " + err.getLocalizedMessage());
+        }
     }
 
     @Override
     public String getProcessUser() throws NativeAccessException {
-        return LIBC.getpwuid(getEuid()).pw_name;
+        try {
+            return LIBC.getpwuid(getEuid()).pw_name;
+        } catch (Exception exc) {
+            throw new NativeAccessException("Failed to get Process User. " + exc.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to get Process User. " + err.getLocalizedMessage());
+        }
     }
 
     @Override
@@ -212,32 +271,35 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
         JavaVMArguments args;
         try {
             args = JavaVMArguments.current();
-        } catch (IOException ex) {
-            throw new NativeAccessException("Failed to restart Java Process. " + LIBC.strerror(Native.getLastError()));
-        }
-        // close all files upon exec, except stdin, stdout, and stderr
-        int sz = LIBC.getdtablesize();
-        for (int i = 3; i < sz; i++) {
-            int flags = LIBC.fcntl(i, F_GETFD);
-            if (flags < 0) {
-                continue;
-            }
-            LIBC.fcntl(i, F_SETFD, flags | FD_CLOEXEC);
-        }
 
-        if (properties != null) {
-            for (String key : properties.keySet()) {
-                args.setSystemProperty(key, properties.get(key));
+            // close all files upon exec, except stdin, stdout, and stderr
+            int sz = LIBC.getdtablesize();
+            for (int i = 3; i < sz; i++) {
+                int flags = LIBC.fcntl(i, F_GETFD);
+                if (flags < 0) {
+                    continue;
+                }
+                LIBC.fcntl(i, F_SETFD, flags | FD_CLOEXEC);
             }
-        }
 
-        if (daemonExec) {
-            Daemon.selfExec(args);
-        } else {
-            // Execute the Java process
-            LIBC.execv(
-                    Daemon.getCurrentExecutable(),
-                    new StringArray(args.toArray(new String[args.size()])));
+            if (properties != null) {
+                for (String key : properties.keySet()) {
+                    args.setSystemProperty(key, properties.get(key));
+                }
+            }
+
+            if (daemonExec) {
+                Daemon.selfExec(args);
+            } else {
+                // Execute the Java process
+                LIBC.execv(
+                        Daemon.getCurrentExecutable(),
+                        new StringArray(args.toArray(new String[args.size()])));
+            }
+        } catch (Exception ex) {
+            throw new NativeAccessException("Failed to restart Java Process. " + ex.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to restart Java Process. " + err.getLocalizedMessage());
         }
         throw new NativeAccessException("Failed to restart Java Process. " + LIBC.strerror(Native.getLastError()));
     }
@@ -250,8 +312,12 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
             if (args != null) {
                 return true;
             }
-        } catch (IOException exc) {
-            LOGGER.log(Level.FINE, "Failed to find Java process arguments", exc);
+        } catch (Exception exc) {
+            logger.info("Failed to find Java process arguments", exc.getLocalizedMessage());
+            // Fall through. Failed to find the Java process arguments
+            // So not possible to start it anyway.
+        } catch (Error exc) {
+            logger.info("Failed to find Java process arguments", exc.getLocalizedMessage());
             // Fall through. Failed to find the Java process arguments
             // So not possible to start it anyway.
         }
@@ -265,7 +331,13 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
 
     @Override
     public boolean checkUnixGroup(String groupName) throws NativeAccessException {
-        return CLibrary.libc.getgrnam(groupName) != null;
+        try {
+            return CLibrary.libc.getgrnam(groupName) != null;
+        } catch (Exception exc) {
+            throw new NativeAccessException("Failed to get Unix Group. " + exc.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to get Unix Group. " + err.getLocalizedMessage());
+        }
     }
 
     @Override
@@ -276,56 +348,64 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
         try {
             UnixUser unixUser = new PAM(serviceName).authenticate(userName, password);
             return unixUser.getGroups();
-        } catch (PAMException ex) {
-            throw new NativeAccessException(ex);
+        } catch (Exception exc) {
+            throw new NativeAccessException("Failed to do Pam Authentication. " + exc.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to do Pam Authentication. " + err.getLocalizedMessage());
         }
 
     }
 
     @Override
     public String checkPamAuthentication() throws NativeAccessException {
-        File s = new File("/etc/shadow");
-        if (s.exists() && !s.canRead()) {
-            // it looks like shadow password is in use, but we don't have read access
-            System.out.println("Shadow in use");
-            POSIX api = PosixAPI.get();
-            FileStat st = api.stat("/etc/shadow");
-            if (st == null) {
-                return "Error:" + Messages.PAMSecurityRealm_ReadPermission();
-            }
-
-            Passwd pwd = api.getpwuid(api.geteuid());
-            String user;
-            if (pwd != null) {
-                user = "Error:" + Messages.PAMSecurityRealm_User(pwd.getLoginName());
-            } else {
-                user = "Error:" + Messages.PAMSecurityRealm_CurrentUser();
-            }
-
-            String group;
-            Group g = api.getgrgid(st.gid());
-            if (g != null) {
-                group = g.getName();
-            } else {
-                group = String.valueOf(st.gid());
-            }
-
-            if ((st.mode() & FileStat.S_IRGRP) != 0) {
-                // the file is readable to group. Hudson should be in the right group, then
-                return "Error:" + Messages.PAMSecurityRealm_BelongToGroup(user, group);
-            } else {
-                Passwd opwd = api.getpwuid(st.uid());
-                String owner;
-                if (opwd != null) {
-                    owner = opwd.getLoginName();
-                } else {
-                    owner = "Error:" + Messages.PAMSecurityRealm_Uid(st.uid());
+        try {
+            File s = new File("/etc/shadow");
+            if (s.exists() && !s.canRead()) {
+                // it looks like shadow password is in use, but we don't have read access
+                System.out.println("Shadow in use");
+                POSIX api = PosixAPI.get();
+                FileStat st = api.stat("/etc/shadow");
+                if (st == null) {
+                    return "Error:" + Messages.PAMSecurityRealm_ReadPermission();
                 }
 
-                return "Error:" + Messages.PAMSecurityRealm_RunAsUserOrBelongToGroupAndChmod(owner, user, group);
+                Passwd pwd = api.getpwuid(api.geteuid());
+                String user;
+                if (pwd != null) {
+                    user = "Error:" + Messages.PAMSecurityRealm_User(pwd.getLoginName());
+                } else {
+                    user = "Error:" + Messages.PAMSecurityRealm_CurrentUser();
+                }
+
+                String group;
+                Group g = api.getgrgid(st.gid());
+                if (g != null) {
+                    group = g.getName();
+                } else {
+                    group = String.valueOf(st.gid());
+                }
+
+                if ((st.mode() & FileStat.S_IRGRP) != 0) {
+                    // the file is readable to group. Hudson should be in the right group, then
+                    return "Error:" + Messages.PAMSecurityRealm_BelongToGroup(user, group);
+                } else {
+                    Passwd opwd = api.getpwuid(st.uid());
+                    String owner;
+                    if (opwd != null) {
+                        owner = opwd.getLoginName();
+                    } else {
+                        owner = "Error:" + Messages.PAMSecurityRealm_Uid(st.uid());
+                    }
+
+                    return "Error:" + Messages.PAMSecurityRealm_RunAsUserOrBelongToGroupAndChmod(owner, user, group);
+                }
             }
+            return Messages.PAMSecurityRealm_Success();
+        } catch (Exception exc) {
+            throw new NativeAccessException("Failed to check Pam Authentication. " + exc.getLocalizedMessage());
+        } catch (Error err) {
+            throw new NativeAccessException("Failed to check Pam Authentication. " + err.getLocalizedMessage());
         }
-        return Messages.PAMSecurityRealm_Success();
     }
 
     private static class SystemMemoryImpl implements NativeSystemMemory {

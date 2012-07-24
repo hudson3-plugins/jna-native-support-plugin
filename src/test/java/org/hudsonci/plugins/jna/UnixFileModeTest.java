@@ -105,6 +105,25 @@ public class UnixFileModeTest {
         }
         Assert.assertTrue(result);
     }
+    
+     /**
+     * Test of createSymlink method, of class JnaNativeUnixSupport.
+     */
+    @Test
+    public void testCreateSymlinkUsingPosix() throws IOException {
+        if (Functions.isWindows()) return;
+        File symlinkToFile = File.createTempFile("test", "test");
+        symlinkToFile.deleteOnExit();
+        File tempDir = symlinkToFile.getParentFile();
+        String targetPath = tempDir.getAbsolutePath() + "/" + RandomStringUtils.randomAlphanumeric(8);
+        System.out.println(targetPath);
+        JnaNativeUnixSupport instance = new JnaNativeUnixSupport();
+        boolean result = instance.createSymlink(targetPath, symlinkToFile, true);
+        if (!result) {
+            System.out.println("Create Symlink: " + instance.getLastError());
+        }
+        Assert.assertTrue(result);
+    }
 
     /**
      * Test of resolveSymlink method, of class JnaNativeUnixSupport.
