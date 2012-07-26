@@ -110,11 +110,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
 
             try {
                 return PosixAPI.get().chmod(file.getAbsolutePath(), mask) == 0;
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 throw new NativeAccessException("Failed to do chmod. " + ex.getLocalizedMessage());
-            } catch (Error err) {
-                throw new NativeAccessException("Failed to do chmod. " + err.getLocalizedMessage());
-            }
+            }  
         }
     }
 
@@ -122,10 +120,8 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
     public boolean chown(File file, int uid, int gid) {
         try {
             return LIBC.chown(file.getPath(), uid, gid) == 0;
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             throw new NativeAccessException("Failed to do chown. " + ex.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to do chown. " + err.getLocalizedMessage());
         }
     }
 
@@ -133,11 +129,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
     public int mode(File file) {
         try {
             return PosixAPI.get().stat(file.getPath()).mode();
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             throw new NativeAccessException("Failed to get File mode. " + ex.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to get File mode. " + err.getLocalizedMessage());
-        }
+        }  
     }
 
     @Override
@@ -147,11 +141,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
             String path = file.getAbsolutePath();
             FileStat stat = posix.stat(path);
             return posix.chmod(path, stat.mode() | 0200) == 0; // u+w
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             throw new NativeAccessException("Failed to make file writable. " + ex.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to make file writable. " + err.getLocalizedMessage());
-        }
+        } 
     }
 
     @Override
@@ -174,11 +166,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
                 // we still prefer to try JNA first as PosixAPI supports even smaller platforms.
                 try {
                     return PosixAPI.get().symlink(symlinkFile.getAbsolutePath(), targetPath) == 0;
-                } catch (Exception ex) {
+                } catch (Throwable ex) {
                     throw new NativeAccessException("Failed to Create Symlink. " + ex.getLocalizedMessage());
-                } catch (Error err) {
-                    throw new NativeAccessException("Failed to Create Symlink. " + err.getLocalizedMessage());
-                }
+                } 
             }
         }
     }
@@ -213,11 +203,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
                 // if JNA is unavailable, fall back.
                 // we still prefer to try JNA first as PosixAPI supports even smaller platforms.
                 return PosixAPI.get().readlink(filename);
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 throw new NativeAccessException("Failed to Resolve Symlink. " + ex.getLocalizedMessage());
-            } catch (Error ex) {
-                throw new NativeAccessException("Failed to Resolve Symlink. " + ex.getLocalizedMessage());
-            }
+            }  
         }
 
     }
@@ -226,44 +214,36 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
     public NativeSystemMemory getSystemMemory() throws NativeAccessException {
         try {
             return new SystemMemoryImpl(MemoryMonitor.get().monitor());
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
             throw new NativeAccessException("Failed to get System Memory. " + exc.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to get System Memory. " + err.getLocalizedMessage());
-        }
+        }  
     }
 
     @Override
     public int getEuid() throws NativeAccessException {
         try {
             return LIBC.geteuid();
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
             throw new NativeAccessException("Failed to get Euid. " + exc.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to get Euid. " + err.getLocalizedMessage());
-        }
+        } 
     }
 
     @Override
     public int getEgid() throws NativeAccessException {
         try {
             return LIBC.getegid();
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
             throw new NativeAccessException("Failed to get Egid. " + exc.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to get Egid. " + err.getLocalizedMessage());
-        }
+        } 
     }
 
     @Override
     public String getProcessUser() throws NativeAccessException {
         try {
             return LIBC.getpwuid(getEuid()).pw_name;
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
             throw new NativeAccessException("Failed to get Process User. " + exc.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to get Process User. " + err.getLocalizedMessage());
-        }
+        }  
     }
 
     @Override
@@ -296,11 +276,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
                         Daemon.getCurrentExecutable(),
                         new StringArray(args.toArray(new String[args.size()])));
             }
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             throw new NativeAccessException("Failed to restart Java Process. " + ex.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to restart Java Process. " + err.getLocalizedMessage());
-        }
+        }  
         throw new NativeAccessException("Failed to restart Java Process. " + LIBC.strerror(Native.getLastError()));
     }
 
@@ -312,15 +290,11 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
             if (args != null) {
                 return true;
             }
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
             logger.info("Failed to find Java process arguments", exc.getLocalizedMessage());
             // Fall through. Failed to find the Java process arguments
             // So not possible to start it anyway.
-        } catch (Error exc) {
-            logger.info("Failed to find Java process arguments", exc.getLocalizedMessage());
-            // Fall through. Failed to find the Java process arguments
-            // So not possible to start it anyway.
-        }
+        } 
         return false;
     }
 
@@ -333,11 +307,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
     public boolean checkUnixGroup(String groupName) throws NativeAccessException {
         try {
             return CLibrary.libc.getgrnam(groupName) != null;
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
             throw new NativeAccessException("Failed to get Unix Group. " + exc.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to get Unix Group. " + err.getLocalizedMessage());
-        }
+        } 
     }
 
     @Override
@@ -348,11 +320,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
         try {
             UnixUser unixUser = new PAM(serviceName).authenticate(userName, password);
             return unixUser.getGroups();
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
             throw new NativeAccessException("Failed to do Pam Authentication. " + exc.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to do Pam Authentication. " + err.getLocalizedMessage());
-        }
+        }  
 
     }
 
@@ -401,11 +371,9 @@ public class JnaNativeUnixSupport extends NativeUnixSupport {
                 }
             }
             return Messages.PAMSecurityRealm_Success();
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
             throw new NativeAccessException("Failed to check Pam Authentication. " + exc.getLocalizedMessage());
-        } catch (Error err) {
-            throw new NativeAccessException("Failed to check Pam Authentication. " + err.getLocalizedMessage());
-        }
+        } 
     }
 
     private static class SystemMemoryImpl implements NativeSystemMemory {
