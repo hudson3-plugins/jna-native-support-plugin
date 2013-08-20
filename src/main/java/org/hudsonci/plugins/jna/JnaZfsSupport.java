@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 public class JnaZfsSupport extends NativeZfsSupport {
 
     private static Logger logger = LoggerFactory.getLogger(JnaZfsSupport.class);
-    private LibZFS zfs;
+    private transient LibZFS zfs;
 
     @DataBoundConstructor
     public JnaZfsSupport() {
