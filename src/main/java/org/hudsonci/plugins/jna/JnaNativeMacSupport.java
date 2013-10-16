@@ -49,6 +49,24 @@ import org.eclipse.hudson.jna.*;
 public class JnaNativeMacSupport extends NativeMacSupport {
 
     private static final Logger LOGGER = Logger.getLogger(JnaNativeMacSupport.class.getName());
+    
+    // local constants
+    private int sizeOf_kinfo_proc;
+    private final int sizeOf_kinfo_proc_32 = 492; // on 32bit Mac OS X.
+    private final int sizeOf_kinfo_proc_64 = 648; // on 64bit Mac OS X.
+    private int kinfo_proc_pid_offset;
+    private int kinfo_proc_pid_offset_32 = 24;
+    private int kinfo_proc_pid_offset_64 = 40;
+    private int kinfo_proc_ppid_offset;
+    private int kinfo_proc_ppid_offset_32 = 416;
+    private int kinfo_proc_ppid_offset_64 = 560;
+    private final int CTL_KERN = 1;
+    private final int KERN_PROC = 14;
+    private final int KERN_PROC_ALL = 0;
+    private final int ENOMEM = 12;
+    private int[] MIB_PROC_ALL = {CTL_KERN, KERN_PROC, KERN_PROC_ALL};
+    private final int KERN_ARGMAX = 8;
+    private final int KERN_PROCARGS2 = 49;
 
     @DataBoundConstructor
     public JnaNativeMacSupport() {
@@ -69,20 +87,23 @@ public class JnaNativeMacSupport extends NativeMacSupport {
     public String getLastError() {
         return LIBC.strerror(Native.getLastError());
     }
-    // local constants
-    private static final int sizeOf_kinfo_proc = 492; // TODO:checked on 32bit Mac OS X. is this different on 64bit?
-    private static final int sizeOfInt = Native.getNativeSize(int.class);
-    private static final int CTL_KERN = 1;
-    private static final int KERN_PROC = 14;
-    private static final int KERN_PROC_ALL = 0;
-    private static final int ENOMEM = 12;
-    private static int[] MIB_PROC_ALL = {CTL_KERN, KERN_PROC, KERN_PROC_ALL};
-    private static final int KERN_ARGMAX = 8;
-    private static final int KERN_PROCARGS2 = 49;
 
     @Override
     public List<NativeProcess> getMacProcesses() throws NativeAccessException {
+        int sizeOfInt = Native.getNativeSize(int.class);
         List<NativeProcess> processList = new ArrayList<NativeProcess>();
+
+        String arch = System.getProperty("sun.arch.data.model");
+        if ("64".equals(arch)) {
+            sizeOf_kinfo_proc = sizeOf_kinfo_proc_64;
+            kinfo_proc_pid_offset = kinfo_proc_pid_offset_64;
+            kinfo_proc_ppid_offset = kinfo_proc_ppid_offset_64;
+        } else {
+            sizeOf_kinfo_proc = sizeOf_kinfo_proc_32;
+            kinfo_proc_pid_offset = kinfo_proc_pid_offset_32;
+            kinfo_proc_ppid_offset = kinfo_proc_ppid_offset_32;
+        }
+
         try {
             IntByReference _ = new IntByReference(sizeOfInt);
             IntByReference size = new IntByReference(sizeOfInt);
@@ -109,8 +130,8 @@ public class JnaNativeMacSupport extends NativeMacSupport {
             LOGGER.log(Level.FINE, "Found {0} processes", count);
 
             for (int base = 0; base < size.getValue(); base += sizeOf_kinfo_proc) {
-                int pid = m.getInt(base + 24);
-                int ppid = m.getInt(base + 416);
+                int pid = m.getInt(base + kinfo_proc_pid_offset);
+                int ppid = m.getInt(base + kinfo_proc_ppid_offset);
 //              int effective_uid = m.getInt(base+304);
 //              byte[] comm = new byte[16];
 //              m.read(base+163,comm,0,16);
@@ -123,7 +144,7 @@ public class JnaNativeMacSupport extends NativeMacSupport {
         return processList;
     }
 
-    private static class NativeMacProcess implements NativeProcess {
+    private class NativeMacProcess implements NativeProcess {
 
         private final int pid;
         private final int ppid;
@@ -175,6 +196,7 @@ public class JnaNativeMacSupport extends NativeMacSupport {
         }
 
         private void parse() {
+            final int sizeOfInt = Native.getNativeSize(int.class);
             try {
                 // allocate them first, so that the parse error wil result in empty data
                 // and avoid retry.
@@ -236,21 +258,43 @@ public class JnaNativeMacSupport extends NativeMacSupport {
                     throw new IOException("Failed to obtain kern.procargs2: " + LIBC.strerror(Native.getLastError()));
                 }
 
-
-
                 /*
                  * Make a sysctl() call to get the raw argument space of the
-                 * process. The layout is documented in start.s, which is part
-                 * of the Csu project. In summary, it looks like:
+                 * process.  The layout is documented in start.s, which is part
+                 * of the Csu project.  In summary, it looks like:
                  *
-                 * /---------------\ 0x00000000 : : : : |---------------| |
-                 * argc | |---------------| | arg[0] | |---------------| : : : :
-                 * |---------------| | arg[argc - 1] | |---------------| | 0 |
-                 * |---------------| | env[0] | |---------------| : : : :
-                 * |---------------| | env[n] | |---------------| | 0 |
+                 * /---------------\ 0x00000000
+                 * :               :
+                 * :               :
+                 * |---------------|
+                 * | argc          |
+                 * |---------------|
+                 * | arg[0]        |
+                 * |---------------|
+                 * :               :
+                 * :               :
+                 * |---------------|
+                 * | arg[argc - 1] |
+                 * |---------------|
+                 * | 0             |
+                 * |---------------|
+                 * | env[0]        |
+                 * |---------------|
+                 * :               :
+                 * :               :
+                 * |---------------|
+                 * | env[n]        |
+                 * |---------------|
+                 * | 0             |
                  * |---------------| <-- Beginning of data returned by sysctl()
-                 * | exec_path | is here. |:::::::::::::::| | | | String area. |
-                 * | | |---------------| <-- Top of stack. : : : :
+                 * | exec_path     |     is here.
+                 * |:::::::::::::::|
+                 * |               |
+                 * | String area.  |
+                 * |               |
+                 * |---------------| <-- Top of stack.
+                 * :               :
+                 * :               :
                  * \---------------/ 0xffffffff
                  */
 
